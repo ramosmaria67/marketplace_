@@ -1,14 +1,34 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import HttpResponseForbidden
 from django.contrib import messages
 from .forms import RegisterForm, ProductForm
-from .models import Product, Cart, CartItem
+from .models import Product, Cart, CartItem, Category
 
 def home(request):
-    products = Product.objects.select_related('owner').prefetch_related('categories').all()
-    return render(request, 'store/home.html', {'products': products})
+    query = request.GET.get('q')
+    category_id = request.GET.get('category')
+    
+    products = Product.objects.select_related('owner').prefetch_related('categories').filter(owner__is_seller=True)
+    
+    if query:
+        products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
+    
+    if category_id:
+        products = products.filter(categories__id=category_id)
+    
+    paginator = Paginator(products, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    categories = Category.objects.all()
+    
+    return render(request, 'store/home.html', {
+        'page_obj': page_obj,
+        'categories': categories
+    })
 
 def register(request):
     if request.method == 'POST':

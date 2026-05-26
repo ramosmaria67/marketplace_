@@ -1,9 +1,29 @@
 {% extends 'store/base.html' %}
 
 {% block content %}
+<!-- Buscador y filtros -->
+<form method="GET" class="row mb-4">
+    <div class="col-md-5">
+        <input type="text" name="q" class="form-control" placeholder="Buscar productos..." value="{{ request.GET.q }}">
+    </div>
+    <div class="col-md-4">
+        <select name="category" class="form-select">
+            <option value="">Todas las categorías</option>
+            {% for category in categories %}
+                <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:'s' %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-dark w-100">Buscar</button>
+    </div>
+</form>
+
 <h2>Productos</h2>
 <div class="row">
-    {% for product in products %}
+    {% for product in page_obj %}
     <div class="col-md-4">
         <div class="card mb-4">
             {% if product.image %}
@@ -13,6 +33,7 @@
                 <h5>{{ product.name }}</h5>
                 <p>${{ product.price }}</p>
                 <small>Stock: {{ product.stock }}</small>
+                <small>Vendedor: {{ product.owner.username }}</small>
                 <div>
                     {% for cat in product.categories.all %}
                         <span class="badge bg-secondary">{{ cat.name }}</span>
@@ -23,7 +44,30 @@
         </div>
     </div>
     {% empty %}
-    <p>No hay productos aún.</p>
+    <p>No hay productos disponibles.</p>
     {% endfor %}
 </div>
+
+<!-- Paginación -->
+{% if page_obj.has_other_pages %}
+<nav>
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Anterior</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">Siguiente</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}
